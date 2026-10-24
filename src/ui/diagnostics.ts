@@ -1,6 +1,8 @@
-// Shown for devices no driver claims. Dumps what WebHID can see, which is
-// exactly what someone writing a new driver needs first.
+// Debug reports: what WebHID can see of a device, plus the recent traffic.
+// Shown for devices no driver claims, after a failed connect, and on demand
+// from the device screen. This is how we debug mice we don't have.
 
+import { traffic } from '../core/transport';
 import { h, hex } from './dom';
 
 interface CollectionSummary {
@@ -40,30 +42,66 @@ export function summariseDevice(device: HIDDevice): DeviceSummary {
   };
 }
 
-export function diagnosticsView(devices: readonly HIDDevice[], onBack: () => void): HTMLElement {
-  const summaries = devices.map(summariseDevice);
-  const json = JSON.stringify(summaries, null, 2);
-  const copy = h(
+export interface ReportContext {
+  platform: string;
+  error?: string;
+  driver?: string;
+  session?: unknown;
+}
+
+/** Everything a bug report needs: browser, devices, the error and the recent HID traffic. */
+export function buildReport(devices: readonly HIDDevice[], context: ReportContext): string {
+  return JSON.stringify(
+    {
+      generated: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      ...context,
+      devices: devices.map(summariseDevice),
+      traffic: traffic.all,
+    },
+    null,
+    2,
+  );
+}
+
+export function copyButton(label: string, text: () => Promise<string> | string, onText?: (text: string) => void): HTMLButtonElement {
+  const button = h(
     'button',
     {
       onclick: async () => {
-        await navigator.clipboard.writeText(json);
-        copy.textContent = 'Copied';
+        const value = await text();
+        onText?.(value);
+        try {
+          await navigator.clipboard.writeText(value);
+          button.textContent = 'Copied';
+        } catch {
+          button.textContent = 'Copy failed: select the text below';
+        }
       },
     },
-    'Copy as JSON',
+    label,
   );
+  return button;
+}
+
+/** Shown for devices no driver claims, and when connecting failed. */
+export function diagnosticsView(devices: readonly HIDDevice[], context: ReportContext, onBack: () => void): HTMLElement {
+  const json = buildReport(devices, context);
+  const failed = context.error !== undefined;
 
   return h(
     'section',
     { class: 'card' },
-    h('h2', null, 'No driver for this device yet'),
+    h('h2', null, failed ? 'Couldn’t connect' : 'No driver for this device yet'),
+    failed ? h('div', { class: 'notices' }, h('div', { class: 'notice error', role: 'alert' }, context.error)) : null,
     h(
       'p',
       null,
-      'Here is what the browser can see. If this is a mouse you want supported, paste this into an issue on the repository.',
+      failed
+        ? 'If this keeps happening, copy the report below (it includes the last packets sent to the mouse) and paste it into an issue on the repository.'
+        : 'Here is what the browser can see. If this is a mouse you want supported, paste this into an issue on the repository.',
     ),
     h('pre', { class: 'dump' }, json),
-    h('div', { class: 'row' }, copy, h('button', { onclick: onBack }, 'Back')),
+    h('div', { class: 'row' }, copyButton('Copy as JSON', () => json), h('button', { onclick: onBack }, 'Back')),
   );
 }

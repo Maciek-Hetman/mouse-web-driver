@@ -418,3 +418,11 @@ pre.dump {
 .buttons-table td:last-child {
   width: 100%;
 }
+
+details.debug summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+details.debug[open] summary {
+  margin-bottom: 8px;
+}

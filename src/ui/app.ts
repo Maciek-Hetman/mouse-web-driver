@@ -1,10 +1,11 @@
+import { DeviceAccessError, InterfaceMismatchError } from '../core/errors';
 import { detectPlatform, webHidSupport, type WebHidSupport } from '../core/platform';
 import type { DriverRegistry } from '../core/registry';
 import { cloneSettings, diffSettings, isEmpty, validateSettings } from '../core/settings';
 import type { DriverContext, MouseSession, MouseSettings, Notice } from '../core/types';
 import { createMockSession } from '../mock/mock-mouse';
 import { buttonsEditor, dpiEditor, extrasSections, lodEditor, pollingEditor, section, type EditorHooks } from './controls';
-import { diagnosticsView } from './diagnostics';
+import { buildReport, copyButton, diagnosticsView } from './diagnostics';
 import { h, hex } from './dom';
 
 interface Connected {
@@ -24,7 +25,7 @@ interface Connected {
 type State =
   | { view: 'home'; granted: HIDDevice[][] }
   | { view: 'busy'; message: string }
-  | { view: 'diagnostics'; devices: HIDDevice[] }
+  | { view: 'diagnostics'; devices: HIDDevice[]; error?: string; driver?: string }
   | Connected;
 
 export class App {
@@ -83,21 +84,37 @@ export class App {
   }
 
   private async open(devices: HIDDevice[]): Promise<void> {
-    const match = this.registry.pick(devices);
-    if (!match) {
-      this.state = { view: 'diagnostics', devices };
-      this.render();
+    const all = this.registry.candidates(devices);
+    if (all.length === 0) {
+      this.setState({ view: 'diagnostics', devices });
       return;
     }
-    const { driver, device } = match;
-    this.setState({ view: 'busy', message: `Connecting to ${device.productName || driver.name}…` });
-    try {
-      const session = await driver.open(device, this.ctx);
-      await this.attach(session, driver.name, device);
-    } catch (err) {
-      if (device.opened) await device.close().catch(() => undefined);
-      this.fail(err);
+    // One mouse can show up as several interfaces. Try each one the driver
+    // claims until one answers; remember why the others didn't.
+    const driver = all[0]!.driver;
+    const candidates = all.filter((c) => c.driver === driver);
+    let blocked: unknown;
+    let mismatch: unknown;
+    for (const [i, { device }] of candidates.entries()) {
+      const which = candidates.length > 1 ? ` (interface ${i + 1} of ${candidates.length})` : '';
+      this.setState({ view: 'busy', message: `Connecting to ${device.productName || driver.name}${which}…` });
+      try {
+        const session = await driver.open(device, this.ctx);
+        await this.attach(session, driver.name, device);
+        return;
+      } catch (err) {
+        if (device.opened) await device.close().catch(() => undefined);
+        if (err instanceof DeviceAccessError) blocked ??= err;
+        else if (err instanceof InterfaceMismatchError) mismatch = err;
+        else return this.failWithReport(devices, driver.name, err);
+      }
     }
+    this.failWithReport(devices, driver.name, blocked ?? mismatch);
+  }
+
+  private failWithReport(devices: HIDDevice[], driver: string, err: unknown): void {
+    this.banner = null;
+    this.setState({ view: 'diagnostics', devices, driver, error: errorMessage(err) });
   }
 
   private async openDemo(): Promise<void> {
@@ -232,7 +249,7 @@ export class App {
       case 'busy':
         return h('section', { class: 'card busy' }, h('div', { class: 'spinner', 'aria-hidden': 'true' }), h('p', null, state.message));
       case 'diagnostics':
-        return diagnosticsView(state.devices, () => this.goHome());
+        return diagnosticsView(state.devices, { platform: this.ctx.platform, error: state.error, driver: state.driver }, () => this.goHome());
       case 'device':
         return this.deviceView(state);
     }
@@ -335,6 +352,40 @@ export class App {
       performance.length ? section('Performance', performance) : null,
       caps.buttons ? section('Buttons', buttonsEditor(caps.buttons, hooks)) : null,
       extrasSections(caps.extras ?? [], hooks),
+      s.device ? this.debugView(s, s.device) : null,
+    );
+  }
+
+  /** A copyable report of what the driver saw, for testing on hardware we don't have. */
+  private debugView(s: Connected, device: HIDDevice): HTMLElement {
+    const out = h('pre', { class: 'dump', hidden: true });
+    const build = async () => {
+      let protocol: unknown;
+      try {
+        protocol = await s.session.diagnostics?.();
+      } catch (err) {
+        protocol = `diagnostics failed: ${errorMessage(err)}`;
+      }
+      return buildReport([device], {
+        platform: this.ctx.platform,
+        driver: s.driverName,
+        session: { info: s.session.info, capabilities: s.session.capabilities, saved: s.saved, protocol },
+      });
+    };
+    return h(
+      'details',
+      { class: 'card debug' },
+      h('summary', null, 'Debug report'),
+      h('p', { class: 'muted' }, 'Protocol details and the last packets exchanged with the mouse. Paste this into an issue when something looks wrong.'),
+      h(
+        'div',
+        { class: 'row' },
+        copyButton('Copy debug report', build, (text) => {
+          out.textContent = text;
+          out.hidden = false;
+        }),
+      ),
+      out,
     );
   }
 

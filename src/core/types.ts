@@ -158,6 +158,11 @@ export interface MouseSession {
   write(changes: MouseSettings): Promise<void>;
   /** Re-read volatile info such as battery level. */
   refreshInfo?(): Promise<DeviceInfo>;
+  /**
+   * Protocol facts worth including in a bug report (feature tables, raw
+   * config bytes, probe results). Must be JSON-serialisable.
+   */
+  diagnostics?(): Promise<unknown>;
   close(): Promise<void>;
 }
 
@@ -187,6 +192,12 @@ export interface MouseDriver {
    * matches the device and one of its collections".
    */
   matches?(device: HIDDevice): boolean;
+  /**
+   * Higher means try this interface first when several match. `open()` should
+   * throw InterfaceMismatchError (core/errors.ts) for an interface that turns
+   * out not to answer, so the app can move on to the next one.
+   */
+  preference?(device: HIDDevice): number;
   /** Platform-specific caveats, shown before and after connecting. */
   platformNotes?(ctx: DriverContext): Notice[];
   open(device: HIDDevice, ctx: DriverContext): Promise<MouseSession>;
