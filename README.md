@@ -14,7 +14,7 @@ drivers come next:
 
 - [ ] Razer (DeathAdder V3, DeathAdder V3 HyperSpeed, Basilisk V3)
 - [ ] Logitech HID++ 2.0 (G Pro X Superlight 2c)
-- [ ] Endgame Gear (OP1 8k v2)
+- [x] Endgame Gear (OP1 8k v2; XM2 8k v2 untested), awaiting hardware test
 
 Until then, **Try the demo mouse** shows the full editor, and **Pick any HID
 device** dumps what the browser can see from any device, which is the first
