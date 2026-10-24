@@ -85,7 +85,7 @@ export function copyButton(label: string, text: () => Promise<string> | string, 
 }
 
 /** Shown for devices no driver claims, and when connecting failed. */
-export function diagnosticsView(devices: readonly HIDDevice[], context: ReportContext, onBack: () => void): HTMLElement {
+export function diagnosticsView(devices: readonly HIDDevice[], context: ReportContext, onBack: () => void, help?: HTMLElement | null): HTMLElement {
   const json = buildReport(devices, context);
   const failed = context.error !== undefined;
 
@@ -94,6 +94,7 @@ export function diagnosticsView(devices: readonly HIDDevice[], context: ReportCo
     { class: 'card' },
     h('h2', null, failed ? 'Couldn’t connect' : 'No driver for this device yet'),
     failed ? h('div', { class: 'notices' }, h('div', { class: 'notice error', role: 'alert' }, context.error)) : null,
+    failed ? help : null,
     h(
       'p',
       null,

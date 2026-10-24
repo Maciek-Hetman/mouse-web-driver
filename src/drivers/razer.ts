@@ -67,10 +67,8 @@ export function accessMessage(platform: Platform): string {
       );
     case 'linux':
       return (
-        'Linux refused access to the mouse. Add a udev rule so your user can open Razer hidraw devices: ' +
-        'KERNEL=="hidraw*", ATTRS{idVendor}=="1532", TAG+="uaccess" (for example in /etc/udev/rules.d/70-razer.rules), ' +
-        'then run "sudo udevadm control --reload && sudo udevadm trigger" and replug the mouse. Close OpenRazer\'s ' +
-        'daemon if it is running.'
+        'Linux refused access to the Razer control interface. If you haven\'t yet, press "Copy setup commands" below, ' +
+        'paste them into a terminal and replug the mouse. Also stop the OpenRazer daemon if it is running.'
       );
     case 'macos':
       return (
@@ -104,9 +102,6 @@ const driver: MouseDriver = {
             'Try it anyway; if it is blocked you will get a clear message and a debug report to send us.',
         },
       ];
-    }
-    if (ctx.platform === 'linux') {
-      return [{ level: 'info', message: 'Razer on Linux needs a udev rule for vendor 1532 (see the README).' }];
     }
     return [];
   },

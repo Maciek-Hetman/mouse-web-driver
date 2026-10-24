@@ -29,9 +29,8 @@ export function openFailedMessage(platform: string, vendorId: number, vendor: st
   const vid = vendorId.toString(16).padStart(4, '0');
   if (platform === 'linux') {
     return (
-      `Linux didn't let the browser open the ${vendor} device. Add a udev rule so your user can open it: put ` +
-      `KERNEL=="hidraw*", ATTRS{idVendor}=="${vid}", TAG+="uaccess" in /etc/udev/rules.d/70-mouse-web-driver.rules, ` +
-      'run "sudo udevadm control --reload && sudo udevadm trigger", then replug the mouse (or receiver) and connect again.'
+      `Linux didn't let the browser open the ${vendor} device (vendor id ${vid}); it needs a one-time udev rule. ` +
+      'Press "Copy setup commands" below, paste them into a terminal, then replug the mouse (or receiver) and connect again.'
     );
   }
   if (platform === 'macos') {

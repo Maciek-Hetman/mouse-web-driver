@@ -250,7 +250,12 @@ export class App {
       case 'busy':
         return h('section', { class: 'card busy' }, h('div', { class: 'spinner', 'aria-hidden': 'true' }), h('p', null, state.message));
       case 'diagnostics':
-        return diagnosticsView(state.devices, { platform: this.ctx.platform, error: state.error, driver: state.driver }, () => this.goHome());
+        return diagnosticsView(
+          state.devices,
+          { platform: this.ctx.platform, error: state.error, driver: state.driver },
+          () => this.goHome(),
+          this.ctx.platform === 'linux' ? linuxAccessHelp(this.registry.all, true) : null,
+        );
       case 'device':
         return this.deviceView(state);
     }
@@ -292,7 +297,8 @@ export class App {
             )
           : null,
         platformNotes.length ? h('div', { class: 'notices' }, platformNotes.map(noticeView)) : null,
-        this.ctx.platform === 'linux' ? linuxAccessHelp(drivers, this.banner?.level === 'error') : null,
+        // Open by default until a mouse has worked once, since that's when it's needed.
+        this.ctx.platform === 'linux' ? linuxAccessHelp(drivers, this.banner?.level === 'error' || granted.length === 0) : null,
       ),
       h(
         'section',

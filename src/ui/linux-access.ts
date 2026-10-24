@@ -35,6 +35,7 @@ export function linuxAccessHelp(drivers: readonly MouseDriver[], open: boolean):
   const commands = udevCommands(vendorIds);
 
   const copy = h('button', {
+    class: 'primary',
     onclick: async () => {
       try {
         await navigator.clipboard.writeText(commands);
@@ -42,9 +43,9 @@ export function linuxAccessHelp(drivers: readonly MouseDriver[], open: boolean):
       } catch {
         copy.textContent = 'Copy failed, select the text instead';
       }
-      setTimeout(() => (copy.textContent = 'Copy commands'), 2000);
+      setTimeout(() => (copy.textContent = 'Copy setup commands'), 2000);
     },
-  }, 'Copy commands');
+  }, 'Copy setup commands');
 
   return h(
     'details',
@@ -53,10 +54,10 @@ export function linuxAccessHelp(drivers: readonly MouseDriver[], open: boolean):
     h(
       'p',
       null,
-      'Linux only lets root open mice as raw HID devices. Run this once in a terminal to give your user access, ' +
-        'then unplug and replug the mouse (or its receiver) and connect again.',
+      'Linux only lets root open mice as raw HID devices. Press the button, paste into a terminal and enter your ' +
+        'password. Then unplug and replug the mouse (or its receiver) and connect again. You only need to do this once.',
     ),
-    h('pre', { class: 'dump' }, commands),
     h('div', { class: 'row' }, copy),
+    h('pre', { class: 'dump' }, commands),
   );
 }

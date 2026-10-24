@@ -38,10 +38,6 @@ const driver: MouseDriver = {
   name: 'Logitech HID++ 2.0 mice (G Pro X Superlight 2c and similar), wired or via Lightspeed',
   filters: [{ vendorId: VENDOR_ID, usagePage: 0xff00 }],
 
-  platformNotes(ctx) {
-    return ctx.platform === 'linux' ? [{ level: 'info', message: 'Logitech on Linux needs a udev rule for vendor 046d (see the README).' }] : [];
-  },
-
   // HID++ answers on the long-report collection. On Windows the short and long
   // collections are separate HIDDevices; elsewhere one HIDDevice carries both.
   matches: (device) => device.vendorId === VENDOR_ID && hasLongHidpp(device),

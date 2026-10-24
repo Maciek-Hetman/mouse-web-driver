@@ -137,6 +137,6 @@ describe('opening the device', () => {
     const device = new Locked({ vendorId: 0x1532, productId: 0x00b2 }).asHid();
     const err = await razerDriver.open(device, ctx).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(DeviceAccessError);
-    expect((err as Error).message).toMatch(/ATTRS\{idVendor\}=="1532"/);
+    expect((err as Error).message).toMatch(/Copy setup commands/);
   });
 });

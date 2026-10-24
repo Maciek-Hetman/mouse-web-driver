@@ -10,7 +10,9 @@ for the first runs on real hardware.
 
 Chromium browsers can only open a mouse's `/dev/hidraw*` node if your user is
 allowed to, and by default only root is. Without this rule, connecting fails
-with "Failed to open the device". Run once:
+with "Failed to open the device". The app's start page has a **Copy setup commands**
+button (under "Linux: Failed to open the device?") that copies exactly this; paste it
+into a terminal once:
 
 ```sh
 sudo tee /etc/udev/rules.d/70-mouse-web-driver.rules >/dev/null <<'RULES'
