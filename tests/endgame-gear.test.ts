@@ -255,7 +255,7 @@ describe('Endgame Gear open failures', () => {
     fake.open = async () => {
       throw new DOMException('Failed to open the device.', 'NotAllowedError');
     };
-    await expect(driver.open(fake.asHid(), ctx)).rejects.toThrow(/idVendor}=="3367".*udevadm/);
+    await expect(driver.open(fake.asHid(), ctx)).rejects.toThrow(/hidraw.*udev commands/);
     await expect(driver.open(fake.asHid(), { platform: 'windows' })).rejects.toThrow(/Close the Endgame Gear software/);
   });
 });

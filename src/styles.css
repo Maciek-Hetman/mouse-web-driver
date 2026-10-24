@@ -180,6 +180,17 @@ button.link {
   color: var(--error);
 }
 
+.linux-access {
+  margin-top: 16px;
+}
+.linux-access summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.linux-access pre {
+  margin: 8px 0;
+}
+
 .busy {
   display: flex;
   align-items: center;

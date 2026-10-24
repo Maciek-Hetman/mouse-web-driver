@@ -91,9 +91,8 @@ function openFailureHint(platform: Platform, err: unknown): string {
   const base = err instanceof Error ? err.message : String(err);
   if (platform === 'linux') {
     return (
-      `${base} Linux only lets root open /dev/hidraw* by default. Add ` +
-      'KERNEL=="hidraw*", ATTRS{idVendor}=="3367", TAG+="uaccess" to /etc/udev/rules.d/70-endgame-gear.rules, ' +
-      'run "sudo udevadm control --reload && sudo udevadm trigger", replug the mouse and reload this page.'
+      `${base} On Linux that means your user can't open /dev/hidraw* yet. ` +
+      'Run the udev commands under "Linux: Failed to open the device?" on the start page, then replug the mouse.'
     );
   }
   return `${base} Close the Endgame Gear software and any other tab using the mouse, replug it, and try again.`;
@@ -105,16 +104,6 @@ const driver: MouseDriver = {
   filters: MODELS.map((m) => ({ vendorId: VENDOR_ID, productId: m.productId, usagePage: USAGE_PAGE })),
 
   platformNotes(ctx) {
-    if (ctx.platform === 'linux') {
-      return [
-        {
-          level: 'info',
-          message:
-            'Endgame Gear on Linux: allow access to the mouse with a udev rule, e.g. ' +
-            'KERNEL=="hidraw*", ATTRS{idVendor}=="3367", TAG+="uaccess" in /etc/udev/rules.d/70-endgame-gear.rules, then replug.',
-        },
-      ];
-    }
     if (ctx.platform === 'windows') {
       return [{ level: 'info', message: 'Endgame Gear: close the Endgame Gear software first, it holds the mouse open.' }];
     }
