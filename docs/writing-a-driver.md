@@ -50,9 +50,19 @@ export default driver;
   plus active index) because every protocol we target writes the table as one
   unit. The app validates against your capabilities first, and reads back
   after writing so the UI shows what the device stored.
-- **One physical mouse, several `HIDDevice`s.** Each USB interface is its own
-  `HIDDevice`. Use `usagePage`/`usage` in `filters`, or a custom `matches()`,
-  so the registry picks the interface that speaks your protocol.
+- **One physical mouse, several `HIDDevice`s.** Each USB interface (on
+  Windows, each top-level collection) is its own `HIDDevice`. Use
+  `usagePage`/`usage` in `filters`, or a custom `matches()`, so the registry
+  only offers interfaces that might speak your protocol, and `preference()` to
+  rank them. If `open()` finds the interface doesn't answer, throw
+  `InterfaceMismatchError` (`src/core/errors.ts`) and the app tries the next
+  one. Throw `DeviceAccessError` with a user-facing message when the browser or
+  OS refuses access; it is shown if no other interface works.
+- **Debug reports.** Implement `diagnostics()` to return protocol facts
+  (feature tables, raw config bytes). The app adds the HID descriptor summary
+  and the last few hundred packets every `HidTransport` sent and received.
+- **Shared protocol code** goes in `src/protocols/`, since every file in
+  `src/drivers/` is loaded as a driver.
 - **Serialise exchanges.** Wrap every command/response pair in
   `transport.exclusive()` so overlapping UI actions can't interleave packets.
 - **Platform caveats** go in `platformNotes(ctx)` (shown on the home screen) or
@@ -68,6 +78,8 @@ export default driver;
 | Notes | Windows Chrome blocks this interface (see `platformNotes`) | Look up feature indexes once in `open()` | Read/modify/write the whole blob in `write()` |
 
 Protocol details for the five test mice are in the project's research report.
+`src/drivers/razer.ts` and `src/drivers/logitech.ts` are worked examples of
+the first two columns.
 
 ## Testing without hardware
 

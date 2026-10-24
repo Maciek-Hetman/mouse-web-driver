@@ -51,13 +51,25 @@ export class DriverRegistry {
 
   /**
    * The chooser can hand back several HIDDevices for one mouse (one per
-   * interface). Return the first one some driver can control.
+   * interface or, on Windows, one per top-level collection). Return the first
+   * one some driver can control.
    */
   pick(devices: readonly HIDDevice[]): DriverMatch | undefined {
-    for (const device of devices) {
+    return this.candidates(devices)[0];
+  }
+
+  /**
+   * Every HIDDevice some driver claims, best first. Several interfaces of one
+   * mouse can look alike (a Razer receiver shows two identical ones and only
+   * one answers), so the app tries them in this order. Drivers can rank their
+   * interfaces with `preference()`; ties keep the browser's order.
+   */
+  candidates(devices: readonly HIDDevice[]): DriverMatch[] {
+    const out: { match: DriverMatch; score: number; order: number }[] = [];
+    devices.forEach((device, order) => {
       const driver = this.find(device);
-      if (driver) return { driver, device };
-    }
-    return undefined;
+      if (driver) out.push({ match: { driver, device }, score: driver.preference?.(device) ?? 0, order });
+    });
+    return out.sort((a, b) => b.score - a.score || a.order - b.order).map((c) => c.match);
   }
 }
