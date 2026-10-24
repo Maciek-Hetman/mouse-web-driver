@@ -1,19 +1,12 @@
-// Translations between the UI's key model (KeyboardEvent.code and named
-// modifiers) and the HID keyboard usages mouse firmware stores.
+// HID usage tables shared by drivers that encode key bindings.
+//
+// Button remaps arrive as KeyboardEvent.code values (see ButtonAction) and most
+// mice store them as HID Keyboard/Keypad page (0x07) usages plus a modifier
+// bitmask, so the conversion lives here rather than in each driver.
 
 import type { KeyModifier } from './types';
 
-const KEY_USAGES: Record<string, number> = {};
-
-for (let i = 0; i < 26; i++) KEY_USAGES[`Key${String.fromCharCode(65 + i)}`] = 0x04 + i;
-for (let i = 1; i <= 9; i++) KEY_USAGES[`Digit${i}`] = 0x1e + i - 1;
-KEY_USAGES.Digit0 = 0x27;
-for (let i = 1; i <= 12; i++) KEY_USAGES[`F${i}`] = 0x3a + i - 1;
-for (let i = 13; i <= 24; i++) KEY_USAGES[`F${i}`] = 0x68 + i - 13;
-for (let i = 1; i <= 9; i++) KEY_USAGES[`Numpad${i}`] = 0x59 + i - 1;
-KEY_USAGES.Numpad0 = 0x62;
-
-Object.assign(KEY_USAGES, {
+const KEYBOARD_USAGES: Record<string, number> = {
   Enter: 0x28,
   Escape: 0x29,
   Backspace: 0x2a,
@@ -53,6 +46,7 @@ Object.assign(KEY_USAGES, {
   NumpadDecimal: 0x63,
   IntlBackslash: 0x64,
   ContextMenu: 0x65,
+  NumpadEqual: 0x67,
   ControlLeft: 0xe0,
   ShiftLeft: 0xe1,
   AltLeft: 0xe2,
@@ -61,27 +55,38 @@ Object.assign(KEY_USAGES, {
   ShiftRight: 0xe5,
   AltRight: 0xe6,
   MetaRight: 0xe7,
-});
+};
 
-const USAGE_KEYS = new Map(Object.entries(KEY_USAGES).map(([code, usage]) => [usage, code]));
+// KeyA..KeyZ = 0x04..0x1D, Digit1..Digit9 = 0x1E..0x26, Digit0 = 0x27,
+// F1..F12 = 0x3A..0x45, F13..F24 = 0x68..0x73, Numpad1..9 = 0x59..0x61, Numpad0 = 0x62.
+for (let i = 0; i < 26; i++) KEYBOARD_USAGES[`Key${String.fromCharCode(65 + i)}`] = 0x04 + i;
+for (let i = 1; i <= 9; i++) KEYBOARD_USAGES[`Digit${i}`] = 0x1d + i;
+KEYBOARD_USAGES.Digit0 = 0x27;
+for (let i = 1; i <= 12; i++) KEYBOARD_USAGES[`F${i}`] = 0x39 + i;
+for (let i = 13; i <= 24; i++) KEYBOARD_USAGES[`F${i}`] = 0x68 + (i - 13);
+for (let i = 1; i <= 9; i++) KEYBOARD_USAGES[`Numpad${i}`] = 0x58 + i;
+KEYBOARD_USAGES.Numpad0 = 0x62;
 
-/** HID keyboard usage (page 0x07) for a KeyboardEvent.code, or undefined if we have no mapping. */
+const CODES_BY_USAGE = new Map(Object.entries(KEYBOARD_USAGES).map(([code, usage]) => [usage, code]));
+
+/** HID Keyboard page usage for a KeyboardEvent.code, or undefined if it has none. */
 export function keyCodeToUsage(code: string): number | undefined {
-  return KEY_USAGES[code];
+  return KEYBOARD_USAGES[code];
 }
 
+/** KeyboardEvent.code for a HID Keyboard page usage, or undefined if we don't know it. */
 export function usageToKeyCode(usage: number): string | undefined {
-  return USAGE_KEYS.get(usage);
+  return CODES_BY_USAGE.get(usage);
 }
 
-// Left-hand modifier bits of the standard keyboard report modifier byte.
+// Left-hand modifier bits of the standard boot keyboard modifier byte.
 const MODIFIER_BITS: Record<KeyModifier, number> = { ctrl: 0x01, shift: 0x02, alt: 0x04, meta: 0x08 };
 
 export function modifiersToMask(modifiers: readonly KeyModifier[] = []): number {
   return modifiers.reduce((mask, m) => mask | MODIFIER_BITS[m], 0);
 }
 
-/** Accepts left (bits 0-3) and right (bits 4-7) modifier bits. */
+/** Right-hand modifier bits (0x10..0x80) fold onto the same modifier. */
 export function maskToModifiers(mask: number): KeyModifier[] {
   const folded = (mask | (mask >> 4)) & 0x0f;
   return (Object.keys(MODIFIER_BITS) as KeyModifier[]).filter((m) => folded & MODIFIER_BITS[m]);

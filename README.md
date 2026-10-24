@@ -13,7 +13,7 @@ Linux, macOS and Windows. Firefox and Safari don't implement WebHID.
 |---|---|---|---|---|---|
 | Razer DeathAdder V3, DA V3 HyperSpeed (cable or dongle), Basilisk V3 | yes | yes, up to 8000 Hz on DA V3 | not yet | not yet | sleep timer, Basilisk scroll wheel |
 | Logitech HID++ 2.0 (G Pro X Superlight 2c), cable or Lightspeed | yes, in the onboard profile | yes (up to 1000 Hz in the profile) | yes, if the mouse offers it | yes | battery |
-| Endgame Gear OP1 8k v2 | in progress | | | | |
+| Endgame Gear OP1 8k v2 (XM2 8k v2 untested) | yes, up to 4 | yes, up to 8000 Hz | yes | yes | motion sync, angle snapping, ripple, debounce and more |
 
 None of this has been confirmed on real hardware yet; see
 [docs/hardware-testing.md](docs/hardware-testing.md). **Try the demo mouse**

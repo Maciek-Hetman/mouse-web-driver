@@ -7,6 +7,7 @@ import { createMockSession } from '../mock/mock-mouse';
 import { buttonsEditor, dpiEditor, extrasSections, lodEditor, pollingEditor, section, type EditorHooks } from './controls';
 import { buildReport, copyButton, diagnosticsView } from './diagnostics';
 import { h, hex } from './dom';
+import { linuxAccessHelp } from './linux-access';
 
 interface Connected {
   view: 'device';
@@ -291,6 +292,7 @@ export class App {
             )
           : null,
         platformNotes.length ? h('div', { class: 'notices' }, platformNotes.map(noticeView)) : null,
+        this.ctx.platform === 'linux' ? linuxAccessHelp(drivers, this.banner?.level === 'error') : null,
       ),
       h(
         'section',
