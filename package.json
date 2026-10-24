@@ -1,0 +1,21 @@
+{
+  "name": "mouse-web-driver",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser-only mouse configuration over WebHID",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/w3c-web-hid": "^1.0.7",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
