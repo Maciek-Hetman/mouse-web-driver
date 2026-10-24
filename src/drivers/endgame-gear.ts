@@ -3,7 +3,7 @@
 // ./endgame-gear/protocol.ts; this file handles the transport side.
 
 import { HidTransport, TransportError, sleep } from '../core/transport';
-import type { MouseDriver, MouseSettings, Notice } from '../core/types';
+import type { MouseDriver, MouseSettings, Notice, Platform } from '../core/types';
 import {
   CMD,
   MODELS,
@@ -86,6 +86,19 @@ class EggDevice {
   }
 }
 
+/** Chrome only says "Failed to open the device"; the cause is almost always one of these. */
+function openFailureHint(platform: Platform, err: unknown): string {
+  const base = err instanceof Error ? err.message : String(err);
+  if (platform === 'linux') {
+    return (
+      `${base} Linux only lets root open /dev/hidraw* by default. Add ` +
+      'KERNEL=="hidraw*", ATTRS{idVendor}=="3367", TAG+="uaccess" to /etc/udev/rules.d/70-endgame-gear.rules, ' +
+      'run "sudo udevadm control --reload && sudo udevadm trigger", replug the mouse and reload this page.'
+    );
+  }
+  return `${base} Close the Endgame Gear software and any other tab using the mouse, replug it, and try again.`;
+}
+
 const driver: MouseDriver = {
   id: 'endgame-gear',
   name: 'Endgame Gear (8K wired)',
@@ -108,10 +121,14 @@ const driver: MouseDriver = {
     return [];
   },
 
-  async open(device) {
+  async open(device, ctx) {
     const model = MODELS.find((m) => m.productId === device.productId);
     const t = new HidTransport(device);
-    await t.open();
+    try {
+      await t.open();
+    } catch (err) {
+      throw new Error(openFailureHint(ctx.platform, err));
+    }
     const egg = new EggDevice(t);
 
     const firmware = await egg.readFirmware().catch(() => undefined);

@@ -248,3 +248,14 @@ describe('Endgame Gear protocol', () => {
     expect(Object.keys(s.buttons!)).toEqual(capabilities.buttons!.buttons.map((b) => b.id));
   });
 });
+
+describe('Endgame Gear open failures', () => {
+  it('explains the udev rule on Linux', async () => {
+    const { fake } = fakeEgg();
+    fake.open = async () => {
+      throw new DOMException('Failed to open the device.', 'NotAllowedError');
+    };
+    await expect(driver.open(fake.asHid(), ctx)).rejects.toThrow(/idVendor}=="3367".*udevadm/);
+    await expect(driver.open(fake.asHid(), { platform: 'windows' })).rejects.toThrow(/Close the Endgame Gear software/);
+  });
+});
