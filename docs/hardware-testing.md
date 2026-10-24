@@ -6,14 +6,40 @@ for the first runs on real hardware.
 
 ## Setup
 
+### Linux (do this first)
+
+Chromium browsers can only open a mouse's `/dev/hidraw*` node if your user is
+allowed to, and by default only root is. Without this rule, connecting fails
+with "Failed to open the device". Run once:
+
 ```sh
-npm install
-npm run dev     # then open http://localhost:5173 in Chrome, Edge or Brave
+sudo tee /etc/udev/rules.d/70-mouse-web-driver.rules >/dev/null <<'RULES'
+# Razer
+KERNEL=="hidraw*", ATTRS{idVendor}=="1532", TAG+="uaccess"
+# Logitech (mice and Lightspeed receivers)
+KERNEL=="hidraw*", ATTRS{idVendor}=="046d", TAG+="uaccess"
+# Endgame Gear
+KERNEL=="hidraw*", ATTRS{idVendor}=="3367", TAG+="uaccess"
+RULES
+sudo udevadm control --reload && sudo udevadm trigger
 ```
 
-- Quit Razer Synapse, Logitech G HUB and OpenRazer/Solaar first. They hold the
+Then unplug and replug each mouse and receiver. To check it worked:
+`ls -l /dev/hidraw*` should show a `+` after the permissions (an ACL for your
+user) on the mouse's nodes. If OpenRazer or Solaar run in the background, stop
+them while testing.
+
+Any Chromium-based browser with WebHID works (Chrome, Edge, Brave, Helium…).
+
+### Run the app
+
+```sh
+npm install
+npm run dev     # then open http://localhost:5173
+```
+
+- Quit Razer Synapse and Logitech G HUB on Windows/macOS. They hold the
   interface and can answer in our place.
-- Linux: add the udev rule from the README and replug the mouse.
 - macOS: if the browser asks for Input Monitoring, allow it and restart the
   browser.
 
@@ -40,7 +66,7 @@ npm run dev     # then open http://localhost:5173 in Chrome, Edge or Brave
 
 | Mouse | Open question |
 |---|---|
-| DeathAdder V3, **Windows** | Does Chrome block Razer's control interface? If you get the "Chrome on Windows refused" message, also open `chrome://device-log` and copy the lines next to the mouse. |
+| DeathAdder V3, **Windows** (if you have a Windows machine handy) | Does Chrome block Razer's control interface? If you get the "Chrome on Windows refused" message, also open `chrome://device-log` and copy the lines next to the mouse. |
 | DeathAdder V3, Linux or macOS | Does the extended (8000 Hz) polling command and its commit packet work? |
 | DA V3 HyperSpeed, dongle | Which of the two look-alike interfaces answers, and is the reply delay enough? Try it on the cable too. |
 | Basilisk V3 | Does the interface the browser offers answer (OpenRazer uses interface 3)? Which scroll-wheel settings show up? |

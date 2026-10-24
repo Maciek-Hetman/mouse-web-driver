@@ -4,7 +4,7 @@
 // send feature reports there on Linux and macOS, but reportedly blocks it on
 // Windows since Chrome 153, so open() turns that failure into a clear message.
 
-import { DeviceAccessError, InterfaceMismatchError, isHidAccessDenied } from '../core/errors';
+import { DeviceAccessError, InterfaceMismatchError, isHidAccessDenied, openOrExplain } from '../core/errors';
 import { HidTransport, TransportError } from '../core/transport';
 import type { Capabilities, DeviceInfo, DriverContext, ExtraSetting, MouseDriver, MouseSession, MouseSettings, Notice, Platform } from '../core/types';
 import * as razer from '../protocols/razer';
@@ -115,7 +115,7 @@ const driver: MouseDriver = {
     const model = modelFor(device);
     if (!model) throw new InterfaceMismatchError('Not a supported Razer mouse.');
     const transport = new HidTransport(device);
-    await transport.open();
+    await openOrExplain(device, ctx.platform, 'Razer');
     const conn = new razer.RazerConnection(transport, {
       // The dongle relays to the mouse over the air; give it time.
       replyDelayMs: model.connection === 'receiver' ? 15 : 3,

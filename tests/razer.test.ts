@@ -126,3 +126,17 @@ describe('Razer driver', () => {
     expect(order).toEqual([mouse, keyboard]);
   });
 });
+
+describe('opening the device', () => {
+  it('turns a refused open on Linux into udev advice', async () => {
+    class Locked extends FakeHidDevice {
+      override async open(): Promise<void> {
+        throw new DOMException('Failed to open the device.', 'NotAllowedError');
+      }
+    }
+    const device = new Locked({ vendorId: 0x1532, productId: 0x00b2 }).asHid();
+    const err = await razerDriver.open(device, ctx).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(DeviceAccessError);
+    expect((err as Error).message).toMatch(/ATTRS\{idVendor\}=="1532"/);
+  });
+});

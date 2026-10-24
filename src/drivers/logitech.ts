@@ -8,7 +8,7 @@
 //   - Live: DPI and report rate through 0x2201/0x2202 and 0x8060/0x8061. Takes
 //     effect at once but the mouse may revert on power cycle or profile switch.
 
-import { InterfaceMismatchError } from '../core/errors';
+import { InterfaceMismatchError, openOrExplain } from '../core/errors';
 import { HidTransport } from '../core/transport';
 import type { ButtonAction, Capabilities, DeviceInfo, MouseDriver, MouseSession, MouseSettings, Notice } from '../core/types';
 import * as hidpp from '../protocols/hidpp';
@@ -38,13 +38,17 @@ const driver: MouseDriver = {
   name: 'Logitech HID++ 2.0 mice (G Pro X Superlight 2c and similar), wired or via Lightspeed',
   filters: [{ vendorId: VENDOR_ID, usagePage: 0xff00 }],
 
+  platformNotes(ctx) {
+    return ctx.platform === 'linux' ? [{ level: 'info', message: 'Logitech on Linux needs a udev rule for vendor 046d (see the README).' }] : [];
+  },
+
   // HID++ answers on the long-report collection. On Windows the short and long
   // collections are separate HIDDevices; elsewhere one HIDDevice carries both.
   matches: (device) => device.vendorId === VENDOR_ID && hasLongHidpp(device),
 
-  async open(device) {
+  async open(device, ctx) {
     const transport = new HidTransport(device);
-    await transport.open();
+    await openOrExplain(device, ctx.platform, 'Logitech');
     try {
       const found = await findMouse(transport, RECEIVER_IDS.has(device.productId));
       if (!found) {
